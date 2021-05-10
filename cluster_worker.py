@@ -1,27 +1,70 @@
-#~ Imports
 import socket
+import select
+import errno
+import util
 
-#~ Consts
-HEADER_SIZE = 10
-PORT = 20000
-IP = '192.168.0.1'
+# IP = "127.0.0.1"
+IP = socket.gethostname()
+PORT = 1234
 
-#~ Initilisations
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect((socket.gethostname(), PORT)) # Should be ip
+node_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+node_socket.connect((IP, PORT))
+node_socket.setblocking(False)
 
-yn = True
-while yn:
-    try:
-        msg = s.recv(8)
-        print(msg.decode("utf-8"))
-    except KeyboardInterrupt:
-        yn = False
+node_socket.send(util.format_message('{WORKER}'))
 
+# while True:
 
-s.send(bytes(f'WORKER:<{HEADERSIZE}', 'utf-8'))
+#     # Wait for user to input a message
+#     message = input(f'{my_username} > ')
 
-while True:
-    msg = s.recv(HEADER_SIZE)
-    message_length = int(message_header.decode('utf-8').strip())
-    print(msg.recv(message_length))
+#     # If message is not empty - send it
+#     if message:
+
+#         # Encode message to bytes, prepare header and convert to bytes, like for username above, then send
+#         message = message.encode('utf-8')
+#         message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
+#         node_socket.send(message_header + message)
+
+#     try:
+#         # Now we want to loop over received messages (there might be more than one) and print them
+#         while True:
+
+#             # Receive our "header" containing username length, it's size is defined and constant
+#             username_header = node_socket.recv(HEADER_LENGTH)
+
+#             # If we received no data, server gracefully closed a connection, for example using socket.close() or socket.shutdown(socket.SHUT_RDWR)
+#             if not len(username_header):
+#                 print('Connection closed by the server')
+#                 sys.exit()
+
+#             # Convert header to int value
+#             username_length = int(username_header.decode('utf-8').strip())
+
+#             # Receive and decode username
+#             username = node_socket.recv(username_length).decode('utf-8')
+
+#             # Now do the same for message (as we received username, we received whole message, there's no need to check if it has any length)
+#             message_header = node_socket.recv(HEADER_LENGTH)
+#             message_length = int(message_header.decode('utf-8').strip())
+#             message = node_socket.recv(message_length).decode('utf-8')
+
+#             # Print message
+#             print(f'{username} > {message}')
+
+#     except IOError as e:
+#         # This is normal on non blocking connections - when there are no incoming data error is going to be raised
+#         # Some operating systems will indicate that using AGAIN, and some using WOULDBLOCK error code
+#         # We are going to check for both - if one of them - that's expected, means no incoming data, continue as normal
+#         # If we got different error code - something happened
+#         if e.errno != errno.EAGAIN and e.errno != errno.EWOULDBLOCK:
+#             print('Reading error: {}'.format(str(e)))
+#             sys.exit()
+
+#         # We just did not receive anything
+#         continue
+
+#     except Exception as e:
+#         # Any other exception - something happened, exit
+#         print('Reading error: '.format(str(e)))
+#         sys.exit()
