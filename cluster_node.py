@@ -23,6 +23,11 @@ class Node:
 
     def run2(self):
         try:
+            self.ports["27"] = Port(self, "27")
             self.network.connect_ip_port(self, "27", f"192.168.0.{random.randint(0,10)}", "22")
+
+            if self.ports["27"].target==None:
+                raise ConnectionRefusedError
+
         except ConnectionRefusedError:
-            del self.ports["22"]
+            self.ports.pop("27")

@@ -16,54 +16,56 @@ class Sim:
 
     def run(self, screen, clock):
         
-        for k,d in self.nodes.items():
-            d.run1()
-
-        for k,d in self.nodes.items():
-            d.run2()
-
-        # for k,d in self.nodes.items():
-        #     print(f"Node {k}")
-        #     print(d)
-        #     print("\n")
-
         while True:
 
-            num = len(self.nodes.keys())
-            size = int(math.sqrt(num))
-            middle = 250 - (size * 100)/2
+            screen.fill((0,0,0))
 
             for k,d in self.nodes.items():
-                for pk, pd in d.ports.items():
+                d.run1()
 
+            for k,d in self.nodes.items():
+                d.run2()
+
+            for k,d in self.nodes.items():
+                print(f"Node {d.ip}")
+                print(str(d))
+
+            def rotate(angle):
+                s = math.sin(angle)
+                c = math.cos(angle)
+                return (250 + 150*c - 0*s, 250 + 150*s + 0*c)
+
+            num = len(self.nodes.keys())
+            angle = 2*math.pi/num
+
+            # Draw connections
+            for k,d in self.nodes.items():
+                for pk, pd in d.ports.items():
                     if pd.target != None:
                         start = int(k.split(".")[-1])
                         end = int(pd.target.node.ip.split(".")[-1])
 
-                        pygame.draw.line(screen, (0, 255, 0), (middle+(start%size)*100, middle+(start//size)*100), (middle+(end%size)*100, middle+(end//size)*100))
+                        pygame.draw.line(screen, (255, 255, 255), rotate(start*angle), rotate(end*angle), 4)
 
+            # Draw nodes
             for k,d in self.nodes.items():
-                pygame.draw.circle(screen, (0, 0, 255), (middle+(int(k.split(".")[-1])%size)*100, middle+(int(k.split(".")[-1])//size)*100), 20)
+                ind = int(k.split(".")[-1])
+                pygame.draw.circle(screen, (0, 0, 255), rotate(ind*angle), 20)
 
             pygame.display.update()
-            clock.tick(15)
+            clock.tick(2)
+
 
     def connect_ip_port(self, node, selport, ip, port):
         try:
 
             # Establish connection - If target is listening
             if self.nodes[ip].ports[port].target == None:
-
-                node.ports[selport] = Port(node, selport)
-                node.ports[selport].set_target(self.nodes[ip].ports[port])
                 self.nodes[ip].ports[port].set_target(node.ports[selport])
+                node.ports[selport].set_target(self.nodes[ip].ports[port])
 
-        except KeyError:
+        except:
             raise ConnectionRefusedError
-
-
-    def visualise(self):
-        pass
 
 
 
