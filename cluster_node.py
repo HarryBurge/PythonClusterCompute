@@ -8,7 +8,7 @@ class Node:
         
         self.network = network
         self.ip = ip
-        self.ports = {}
+        self.ports = {"20000" : Port(self, 20000)}
 
 
     def __str__(self):
@@ -18,16 +18,31 @@ class Node:
         return line
 
 
-    def run1(self):
-        self.ports["22"] = Port(self, "22")
+    def connect_to_node(self, tarip):
+        timeoutdelay = 10000
 
-    def run2(self):
-        try:
-            self.ports["27"] = Port(self, "27")
-            self.network.connect_ip_port(self, "27", f"192.168.0.{random.randint(0,10)}", "22")
+        # Initilise first connection
+        for i in range(timeoutdelay):
+            self.ports["20001"] = Port(self, 20001)
 
-            if self.ports["27"].target==None:
-                raise ConnectionRefusedError
+            try:
+                self.network.connect_ip_port(self.ip, "20001", tarip, "20000")
+                print("connected")
+                break
 
-        except ConnectionRefusedError:
-            self.ports.pop("27")
+            except ConnectionRefusedError:
+                self.ports.pop("20001")
+        
+        else:
+            return False
+
+        return True
+
+
+    def run(self):
+        
+        while True:
+            temp= int(self.ip.split(".")[-1])
+            target = [i for i in range(10)][:temp] + [i for i in range(10)][temp+1:]
+            if self.connect_to_node(f"192.168.0.{random.choice(target)}") != False:
+                return

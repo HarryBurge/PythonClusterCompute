@@ -3,6 +3,8 @@ from sim_port import Port
 
 import pygame
 import math
+import threading
+
 
 class Sim:
 
@@ -15,20 +17,19 @@ class Sim:
 
 
     def run(self, screen, clock):
+
+        for k,d in self.nodes.items():
+            tom = threading.Thread(target=Node.run, args=(d,))
+            tom.setDaemon = True
+            tom.start()
         
         while True:
 
             screen.fill((0,0,0))
 
-            for k,d in self.nodes.items():
-                d.run1()
-
-            for k,d in self.nodes.items():
-                d.run2()
-
-            for k,d in self.nodes.items():
-                print(f"Node {d.ip}")
-                print(str(d))
+            # for k,d in self.nodes.items():
+            #     print(f"Node {d.ip}")
+            #     print(str(d))
 
             def rotate(angle):
                 s = math.sin(angle)
@@ -53,16 +54,19 @@ class Sim:
                 pygame.draw.circle(screen, (0, 0, 255), rotate(ind*angle), 20)
 
             pygame.display.update()
-            clock.tick(2)
+            clock.tick(60)
 
 
-    def connect_ip_port(self, node, selport, ip, port):
+    def connect_ip_port(self, selip, selport, tarip, tarport):
         try:
 
-            # Establish connection - If target is listening
-            if self.nodes[ip].ports[port].target == None:
-                self.nodes[ip].ports[port].set_target(node.ports[selport])
-                node.ports[selport].set_target(self.nodes[ip].ports[port])
+            if self.nodes[tarip].ports[tarport].target==None and self.nodes[selip].ports[selport].target==None:
+
+                self.nodes[selip].ports[selport].target= self.nodes[tarip].ports[tarport]
+                self.nodes[tarip].ports[tarport].target= self.nodes[selip].ports[selport].target
+            
+            else:
+                raise ConnectionRefusedError
 
         except:
             raise ConnectionRefusedError
