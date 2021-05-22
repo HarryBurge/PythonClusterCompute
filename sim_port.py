@@ -29,3 +29,10 @@ class Port:
 
     def recieve_message(self, message):
         self.buffer.append(message)
+
+    def read_buffer(self):
+        if len(self.buffer)!=0:
+            temp= self.buffer[0]
+            del self.buffer[0]
+            return temp
+        return False
