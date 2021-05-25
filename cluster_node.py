@@ -79,8 +79,8 @@ class Node:
 
     def run(self):
         
-        while True:
-            temp= int(self.ip.split(".")[-1])
-            target = [i for i in range(10)][:temp] + [i for i in range(10)][temp+1:]
-            if self.connect_to_node(f"192.168.0.{random.choice(target)}") != False:
-                return
+        # while True:
+        temp= int(self.ip.split(".")[-1])
+        target = [i for i in range(10)][:temp] + [i for i in range(10)][temp+1:]
+        if self.connect_to_node(f"192.168.0.{random.choice(target)}") != False:
+            return

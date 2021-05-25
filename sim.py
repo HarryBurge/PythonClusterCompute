@@ -27,9 +27,9 @@ class Sim:
 
             screen.fill((0,0,0))
 
-            # for k,d in self.nodes.items():
-            #     print(f"Node {d.ip}")
-            #     print(str(d))
+            for k,d in self.nodes.items():
+                print(f"Node {d.ip}")
+                print(str(d))
 
             def rotate(angle):
                 s = math.sin(angle)
@@ -59,7 +59,7 @@ class Sim:
 
     def connect_ip_port(self, selip, selport, tarip, tarport):
         try:
-
+                
             if self.nodes[tarip].ports[tarport].target==None and self.nodes[selip].ports[selport].target==None:
 
                 self.nodes[selip].ports[selport].target= self.nodes[tarip].ports[tarport]
