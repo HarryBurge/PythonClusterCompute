@@ -27,9 +27,9 @@ class Sim:
 
             screen.fill((0,0,0))
 
-            for k,d in self.nodes.items():
-                print(f"Node {d.ip}")
-                print(str(d))
+            # for k,d in self.nodes.items():
+            #     print(f"Node {d.ip}")
+            #     print(str(d))
 
             def rotate(angle):
                 s = math.sin(angle)

@@ -1,6 +1,7 @@
 from sim_port import Port
 
 import random
+import time
 
 class Node:
 
@@ -39,7 +40,8 @@ class Node:
         myport= None
 
         for i in range(2, 51):
-            if str(20000+i) in self.ports:
+            if str(20000+i) in self.ports.keys():
+                print('here')
                 myport= str(20000+i)
                 self.ports[myport] = Port(self, myport)
                 break
@@ -78,9 +80,27 @@ class Node:
 
 
     def run(self):
-        
+
+        connected= False
+
         # while True:
-        temp= int(self.ip.split(".")[-1])
-        target = [i for i in range(10)][:temp] + [i for i in range(10)][temp+1:]
-        if self.connect_to_node(f"192.168.0.{random.choice(target)}") != False:
-            return
+        for i in range(3):
+
+            time.sleep(2)
+
+            if not connected:
+                temp= int(self.ip.split(".")[-1])
+                target = [i for i in range(10)][:temp] + [i for i in range(10)][temp+1:]
+                if self.connect_to_node(f"192.168.0.{random.choice(target)}") != False:
+                    connected= True
+
+            # for k,d in self.ports.items():
+            #     temp= d.read_buffer()
+
+            #     if temp!= False:
+            #         tarip= temp.split(":")[0]
+            #         tarport= temp.split(":")[1]
+            #         print([tarip, tarport])
+
+
+            
