@@ -27,9 +27,9 @@ class Sim:
 
             screen.fill((0,0,0))
 
-            # for k,d in self.nodes.items():
-            #     print(f"Node {d.ip}")
-            #     print(str(d))
+            for k,d in self.nodes.items():
+                print(f"Node {d.ip}")
+                print(str(d))
 
             def rotate(angle):
                 s = math.sin(angle)
@@ -52,7 +52,7 @@ class Sim:
             for k,d in self.nodes.items():
                 ind = int(k.split(".")[-1])
                 pygame.draw.circle(screen, (0, 0, 255), rotate(ind*angle), 20)
-
+ 
             pygame.display.update()
             clock.tick(60)
 

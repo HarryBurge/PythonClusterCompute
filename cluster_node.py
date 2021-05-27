@@ -19,6 +19,47 @@ class Node:
         return line
 
 
+    def connect_recv_check(self): 
+        for k,d in self.ports.items():
+            temp= d.read_buffer()
+
+            if temp != False:
+                tarip= temp.split(":")[0].replace("[","").replace("]","")
+                tarport= temp.split(":")[1].replace("[","").replace("]","")
+
+                # Pick our port we want perminant connection on
+                myport= None
+
+                for i in range(2, 51):
+                    if str(20000+i) not in self.ports.keys():
+                        myport= str(20000+i)
+                        self.ports[myport] = Port(self, myport)
+                        break
+
+                if myport != None:
+                    timeoutdelay = 10000
+
+                    # Initilise first connection
+                    for i in range(timeoutdelay):
+                        self.ports[myport] = Port(self, myport)
+
+                        try:
+                            self.network.connect_ip_port(self.ip, str(myport), tarip, tarport)
+                            break
+
+                        except ConnectionRefusedError:
+                            self.ports.pop(str(myport))
+                    
+                    else:
+                        return False
+
+
+                    self.send_message_to_node([tarip], f"[{self.ip}]:[{myport}]")
+
+                    # Reopen starter ports
+                    self.ports["20000"].target= None
+
+
     def connect_to_node(self, tarip):
         timeoutdelay = 10000
 
@@ -40,11 +81,11 @@ class Node:
         myport= None
 
         for i in range(2, 51):
-            if str(20000+i) in self.ports.keys():
-                print('here')
+            if str(20000+i) not in self.ports.keys():
                 myport= str(20000+i)
                 self.ports[myport] = Port(self, myport)
                 break
+
 
         # Send where we are listening
         if myport!= None:
@@ -74,7 +115,7 @@ class Node:
         for ip in tarips:
             for pnum, port in self.ports.items():
 
-                if port.target.ip==ip:
+                if port.target != None and port.target.node.ip==ip:
                     port.send_message(msg)
 
 
@@ -84,23 +125,18 @@ class Node:
         connected= False
 
         # while True:
-        for i in range(3):
+        for i in range(30):
 
-            time.sleep(2)
+            time.sleep(0.2)
 
             if not connected:
                 temp= int(self.ip.split(".")[-1])
                 target = [i for i in range(10)][:temp] + [i for i in range(10)][temp+1:]
                 if self.connect_to_node(f"192.168.0.{random.choice(target)}") != False:
-                    connected= True
+                    # connected= True
+                    connected= False
 
-            # for k,d in self.ports.items():
-            #     temp= d.read_buffer()
-
-            #     if temp!= False:
-            #         tarip= temp.split(":")[0]
-            #         tarport= temp.split(":")[1]
-            #         print([tarip, tarport])
+            self.connect_recv_check()
 
 
             
