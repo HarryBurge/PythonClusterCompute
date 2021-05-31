@@ -99,14 +99,15 @@ class Node:
             temp= self.ports[myport].read_buffer()
 
             if temp != False and temp.split(":")[0]==f"[{tarip}]":
-                # Reopen starter ports
-                self.ports["20000"].target= None
-                self.ports.pop("20001")
                 break
 
         else:
             return False
 
+        # Reopen starter ports
+        self.ports["20000"].target= None
+        self.ports.pop("20001")
+        
         return True
 
     
@@ -124,8 +125,7 @@ class Node:
 
         connected= False
 
-        # while True:
-        for i in range(30):
+        while True:
 
             time.sleep(0.2)
 
@@ -133,8 +133,7 @@ class Node:
                 temp= int(self.ip.split(".")[-1])
                 target = [i for i in range(10)][:temp] + [i for i in range(10)][temp+1:]
                 if self.connect_to_node(f"192.168.0.{random.choice(target)}") != False:
-                    # connected= True
-                    connected= False
+                    connected= True
 
             self.connect_recv_check()
 
