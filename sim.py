@@ -15,21 +15,25 @@ import math
 class Sim:
     
     nodes= {}
+    mutex = threading.Lock()
     screen= pygame.display.set_mode((500, 500))
     clock= pygame.time.Clock()
 
     def __init__(self):
         # Init nodes
-        for i in range(10):
+        for i in range(3):
             self.nodes['192.168.0.{}'.format(i)]= Node(self, '192.168.0.{}'.format(i))
 
 
     def run(self):
         # Run nodes in diffrent threads
+        # for k,d in self.nodes.items():
+        #     t= threading.Thread(target=Node.run, args=(d,))
+        #     t.setDaemon= True
+        #     t.start()
+
         for k,d in self.nodes.items():
-            t= threading.Thread(target=Node.run, args=(d,))
-            t.setDaemon= True
-            t.start()
+            d.run()
 
         # Drawing
         diff_angle= 2*math.pi/len(self.nodes.keys())
@@ -48,13 +52,13 @@ class Sim:
 
             # Draw connections
             for k,d in self.nodes.items():
-                for pk,pd in d.connections.items():
+                for selport, tarip, tarport in self.connections:
 
-                    if pd!=None:
+                    if tarip!=None and tarport!=None:
                         start= int(k.split('.')[-1])
-                        end= int(pd[0].split('.')[-1])
+                        end= int(tarip[0].split('.')[-1])
 
-                        if pk=='20000' or pk=='20001':
+                        if tarport=='20000' or tarport=='20001':
                             pygame.draw.line(self.screen, s_colour, rotate(start*diff_angle), rotate(end*diff_angle), 4)
                         else:
                             pygame.draw.line(self.screen, e_colour, rotate(start*diff_angle), rotate(end*diff_angle), 4)
@@ -67,21 +71,32 @@ class Sim:
             pygame.display.update()
             self.clock.tick(60)
 
-            print(self.nodes['192.168.0.0'])
+            for k,d in self.nodes.items():
+                print(d)
+
+            print()
 
  
     def connect_node_to_node(self, ip1, port1, ip2, port2):
+    
+        self.mutex.acquire(blocking=True)
+
         # Check both ports are clear then connect them
         try:
+
+            # TODO: need to redo because of change to array
             if self.nodes[ip1].connections[port1]==None and self.nodes[ip2].connections[port2]==None:
-                self.nodes[ip1].connections[port1]= (ip2, port2, [])
-                self.nodes[ip2].connections[port2]= (ip1, port1, [])
+                self.nodes[ip1].connections[port1]= [ip2, port2, []]
+                self.nodes[ip2].connections[port2]= [ip1, port1, []]
+
+                self.mutex.release()
                 return True
 
         # If either port doesn't exist
         except AttributeError:
             pass
 
+        self.mutex.release()
         return False
 
         
