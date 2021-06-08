@@ -35,6 +35,8 @@ class Sim:
         # for k,d in self.nodes.items():
         #     d.run()
 
+        # test
+
         # Drawing
         diff_angle= 2*math.pi/len(self.nodes.keys())
         s_colour= (255, 255, 0)
