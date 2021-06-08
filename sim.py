@@ -21,19 +21,19 @@ class Sim:
 
     def __init__(self):
         # Init nodes
-        for i in range(3):
+        for i in range(10):
             self.nodes['192.168.0.{}'.format(i)]= Node(self, '192.168.0.{}'.format(i))
 
 
     def run(self):
         # Run nodes in diffrent threads
-        # for k,d in self.nodes.items():
-        #     t= threading.Thread(target=Node.run, args=(d,))
-        #     t.setDaemon= True
-        #     t.start()
-
         for k,d in self.nodes.items():
-            d.run()
+            t= threading.Thread(target=Node.run, args=(d,))
+            t.setDaemon= True
+            t.start()
+
+        # for k,d in self.nodes.items():
+        #     d.run()
 
         # Drawing
         diff_angle= 2*math.pi/len(self.nodes.keys())
@@ -52,16 +52,16 @@ class Sim:
 
             # Draw connections
             for k,d in self.nodes.items():
-                for selport, tarip, tarport in self.connections:
+                for selport,[tarip, tarport, buffer] in d.connections.items():
 
                     if tarip!=None and tarport!=None:
                         start= int(k.split('.')[-1])
-                        end= int(tarip[0].split('.')[-1])
+                        end= int(tarip.split('.')[-1])
 
                         if tarport=='20000' or tarport=='20001':
-                            pygame.draw.line(self.screen, s_colour, rotate(start*diff_angle), rotate(end*diff_angle), 4)
+                            pygame.draw.line(self.screen, s_colour, rotate(start*diff_angle), rotate(end*diff_angle), 1)
                         else:
-                            pygame.draw.line(self.screen, e_colour, rotate(start*diff_angle), rotate(end*diff_angle), 4)
+                            pygame.draw.line(self.screen, e_colour, rotate(start*diff_angle), rotate(end*diff_angle), 1)
 
             # Draw nodes
             for k,d in self.nodes.items():
@@ -71,10 +71,10 @@ class Sim:
             pygame.display.update()
             self.clock.tick(60)
 
-            for k,d in self.nodes.items():
-                print(d)
+            # for k,d in self.nodes.items():
+            #     print(d)
 
-            print()
+            # print()
 
  
     def connect_node_to_node(self, ip1, port1, ip2, port2):
@@ -83,17 +83,14 @@ class Sim:
 
         # Check both ports are clear then connect them
         try:
-
-            # TODO: need to redo because of change to array
-            if self.nodes[ip1].connections[port1]==None and self.nodes[ip2].connections[port2]==None:
+            if self.nodes[ip1].connections[port1][0]==None and self.nodes[ip2].connections[port2][0]==None:
                 self.nodes[ip1].connections[port1]= [ip2, port2, []]
                 self.nodes[ip2].connections[port2]= [ip1, port1, []]
-
                 self.mutex.release()
                 return True
 
         # If either port doesn't exist
-        except AttributeError:
+        except KeyError:
             pass
 
         self.mutex.release()
