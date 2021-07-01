@@ -1,38 +1,21 @@
+#~ Imports
+
+#~ Constants
+
+#~ Port
 class Port:
 
-    def __init__(self, node, port_num):
-        self.node = node
-        self.buffer = []
-        self.port_num = port_num
-        self.target = None
-
-    def __str__(self):
-        line=""
-
-        if self.target==None:
-            line += "Listening\n"
-        else:
-            line += f"Connected to {self.target.node.ip}:{self.target.port_num}\n"
-
-        for i in self.buffer:
-            line += i + "\n"
-
-        return line
-
+    def __init__(self, portnum):
         
+        self.portnum= portnum
+        self.targetip= None
+        self.targetport= None
+        self.buffer= []
 
-    def set_target(self, target):
-        self.target = target
+    
+    def read(self):
+        pass
 
-    def send_message(self, message):
-        self.target.recieve_message(message)
 
-    def recieve_message(self, message):
-        self.buffer.append(message)
-
-    def read_buffer(self):
-        if len(self.buffer)!=0:
-            temp= self.buffer[0]
-            del self.buffer[0]
-            return temp
-        return False
+    def send(self, msg):
+        pass
