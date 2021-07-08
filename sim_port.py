@@ -14,6 +14,10 @@ class Port:
         self.targetport= None
         self.buffer= []
 
+
+    def __str__(self):
+        return f'{self.portnum}:{self.targetip}-{self.targetport}'
+
     
     def read(self):
         if (len(self.buffer) != 0):
@@ -29,3 +33,4 @@ class Port:
 
     def receive(self, msg):
         self.buffer.append(msg)
+        print(msg)
