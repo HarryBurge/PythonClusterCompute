@@ -35,6 +35,8 @@ class Sim:
             for k,d in self.nodes.items():
                 d.step()
                 print(d)
+                print()
+            print('-----------------------------------------')
             input()
 
 
