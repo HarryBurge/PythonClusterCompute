@@ -3,22 +3,29 @@ from sim_port import Port
 import random
 
 #~ Constants
-TIMEOUT_TIMER= 10000
+TIMEOUT_TIMER= 10
 HEADER_LENGTH= 20
 
 #~ Node
 class Node:
+    '''
+    Holds a simulation of a node on a network
+    - Uses a semi event driven model (May be changed to follow exactly and use closures to activate)
+    - Interupts:
+        - Have 3 letter types which indicate which function
+        - Stage of function (-1 to clear action)
+        - Timer countdown (-1 called when reaches 0)
+        - Args are things to be passed to function
+    '''
 
     def __init__(self, network, ip):
         
         self.ip= ip
         self.ports= {'2000':Port(2000, network)}
+        self.network= network
 
         # [{<type>, <stage>, <counter>, <args>}]
         self.interupts= []
-
-        self.network= network
-        self.temp= 1
 
 
     def __str__(self):
@@ -71,9 +78,13 @@ class Node:
         # Exit program
         elif (stage==-1):
             for portnum, port in self.ports.items():
-                if (port.targetip==tarip or port.targetip==None):
+                if ( (port.targetip==tarip or port.targetip==None) and portnum!='2000' ):
                     del self.ports[portnum]
                     return True
+                elif (portnum=='2000'):
+                    self.ports[portnum].targetip= None
+                    self.ports[portnum].targetport= None
+                    self.ports[portnum].buffer= []
             return False
 
 
@@ -110,7 +121,7 @@ class Node:
 
         elif (stage==2):
             type, tmsg= self.decode_message(self.ports[selport].read())
-            type= type[-3:] # To be deleted, gets rid of other header infomation
+            type= type[-3:] # TODO: Delete
 
             if (type=='INT' and tmsg=='Confirm'):
                 self.ports[selport].pop()
@@ -126,10 +137,12 @@ class Node:
 
 
     def step(self):
-        tar= f'192.168.1.{random.randint(0, 2)}'
-        if (self.ip!=tar):
-            self.estab_conn(tar)
-            self.temp-=1
+
+        if ('2001' not in self.ports):
+            tar= f'192.168.1.{random.randint(0, len(self.network.nodes))}'
+            if (self.ip!=tar):
+                self.estab_conn(tar)
+
 
         for ind, inter in enumerate(self.interupts):
 
@@ -161,7 +174,7 @@ class Node:
 
             if (port.buffer!=[]):
                 type, msg= self.decode_message(port.read())
-                type= type[-3:] # To be deleted, gets rid of other header infomation
+                type= type[-3:] # TODO: Delete
 
                 if (type=='INT' and msg!='Confirm'):
                     self.interupts.append(
