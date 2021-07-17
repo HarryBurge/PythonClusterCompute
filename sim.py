@@ -4,7 +4,7 @@ import pygame
 import math
 
 #~ Constants
-NUM_NODES= 3
+NUM_NODES= 10
 
 #~ Sim
 class Sim:
@@ -33,51 +33,51 @@ class Sim:
 
     def visuals(self, screen):
 
-        for event in pygame.event.get():
-            if (event.type == pygame.QUIT):
-                return False
+        # for event in pygame.event.get():
+        #     if (event.type == pygame.QUIT):
+        #         return False
 
-        screen.fill((255,255,255))
+        # screen.fill((255,255,255))
         
-        def rotate(origin, point, angle):
-            ox, oy = origin
-            px, py = point
+        # def rotate(origin, point, angle):
+        #     ox, oy = origin
+        #     px, py = point
 
-            qx = ox + math.cos(angle) * (px - ox) - math.sin(angle) * (py - oy)
-            qy = oy + math.sin(angle) * (px - ox) + math.cos(angle) * (py - oy)
-            return qx, qy
+        #     qx = ox + math.cos(angle) * (px - ox) - math.sin(angle) * (py - oy)
+        #     qy = oy + math.sin(angle) * (px - ox) + math.cos(angle) * (py - oy)
+        #     return qx, qy
 
-        deg= 2*math.pi/len(self.nodes)
+        # deg= 2*math.pi/len(self.nodes)
 
-        for k,d in self.nodes.items():
-            for kp,dp in d.ports.items():
-                if (dp.targetip==None):
-                    pygame.draw.line(screen, 
-                                    (0, 0, 0), 
-                                    rotate((500, 500), (500, 800), deg*int(d.ip.split('.')[-1])),
-                                    (500, 500),
-                                    4
-                    )
-                else:
-                    pygame.draw.line(screen, 
-                                    (0, 0, 0), 
-                                    rotate((500, 500), (500, 800), deg*int(d.ip.split('.')[-1])),
-                                    rotate((500, 500), (500, 800), deg*int(dp.targetip.split('.')[-1])),
-                                    4
-                    )
+        # for k,d in self.nodes.items():
+        #     for kp,dp in d.ports.items():
+        #         if (dp.targetip==None):
+        #             pygame.draw.line(screen, 
+        #                             (0, 0, 0), 
+        #                             rotate((500, 500), (500, 800), deg*int(d.ip.split('.')[-1])),
+        #                             (500, 500),
+        #                             4
+        #             )
+        #         else:
+        #             pygame.draw.line(screen, 
+        #                             (0, 0, 0), 
+        #                             rotate((500, 500), (500, 800), deg*int(d.ip.split('.')[-1])),
+        #                             rotate((500, 500), (500, 800), deg*int(dp.targetip.split('.')[-1])),
+        #                             4
+        #             )
 
-        for k,d in self.nodes.items():
-            pygame.draw.circle(screen, 
-                                (0, 0, 255), 
-                                rotate((500, 500), 
-                                (500, 800), 
-                                deg*int(d.ip.split('.')[-1])), 
-                                25
-            )
+        # for k,d in self.nodes.items():
+        #     pygame.draw.circle(screen, 
+        #                         (0, 0, 255), 
+        #                         rotate((500, 500), 
+        #                         (500, 800), 
+        #                         deg*int(d.ip.split('.')[-1])), 
+        #                         25
+        #     )
 
 
 
-        pygame.display.flip()
+        # pygame.display.flip()
         return True
 
 
@@ -96,12 +96,13 @@ class Sim:
 
 
 if __name__ == '__main__':
-    pygame.init()
-    screen= pygame.display.set_mode([1000,1000])
+    # pygame.init()
+    # screen= pygame.display.set_mode([1000,1000])
+    screen= 'tom'
 
     sim= Sim()
     sim.run(screen)
 
-    pygame.quit()
+    # pygame.quit()
 
     # TODO: Problem with converging connections to one port, probably something to do with handerling, could switch to only one thing being dealt with per cycle

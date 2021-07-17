@@ -81,10 +81,10 @@ class Node:
                 if ( (port.targetip==tarip or port.targetip==None) and portnum!='2000' ):
                     del self.ports[portnum]
                     return True
-                elif (portnum=='2000'):
-                    self.ports[portnum].targetip= None
-                    self.ports[portnum].targetport= None
-                    self.ports[portnum].buffer= []
+                # elif (portnum=='2000'):
+                #     self.ports[portnum].targetip= None
+                #     self.ports[portnum].targetport= None
+                #     self.ports[portnum].buffer= []
             return False
 
 
@@ -139,7 +139,7 @@ class Node:
     def step(self):
 
         if ('2001' not in self.ports):
-            tar= f'192.168.1.{random.randint(0, len(self.network.nodes))}'
+            tar= f'192.168.1.{random.randint(0, len(self.network.nodes)-1)}'
             if (self.ip!=tar):
                 self.estab_conn(tar)
 
@@ -169,6 +169,7 @@ class Node:
                     self.interupts[ind]= None
                 else: 
                     inter['counter']-= 1
+
 
         for portnum, port in self.ports.items():
 
