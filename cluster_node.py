@@ -6,6 +6,11 @@ import random
 TIMEOUT_TIMER= 10
 HEADER_LENGTH= 20
 
+LISTEN_PORT= '2000'
+INTIAL_PORT= '2001'
+GEN_PORT_MIN= '2002'
+GEN_PORT_MAX= '2005'
+
 #~ Node
 class Node:
     '''
@@ -21,7 +26,7 @@ class Node:
     def __init__(self, network, ip):
         
         self.ip= ip
-        self.ports= {'2000':Port(2000, network)}
+        self.ports= {LISTEN_PORT:Port(LISTEN_PORT, network)}
         self.network= network
 
         # [{<type>, <stage>, <counter>, <args>}]
@@ -48,11 +53,11 @@ class Node:
     def estab_conn(self, tarip, stage= 0): # EST
 
         if (stage==0):
-            self.ports['2001']= Port('2001', self.network)
+            self.ports[INTIAL_PORT]= Port(INTIAL_PORT, self.network)
             self.network.tcp(
-                self.ip, '2001', 
-                tarip, '2000', 
-                self.encode_message(f'{self.ip}:2001', 'INT')
+                self.ip, INTIAL_PORT, 
+                tarip, LISTEN_PORT, 
+                self.encode_message(f'{self.ip}:{INTIAL_PORT}', 'INT')
             )
             self.interupts.append(
                 {'type':'EST', 'stage':1, 'counter':TIMEOUT_TIMER, 'args':[tarip]}
@@ -60,31 +65,27 @@ class Node:
             return True
 
         elif (stage==1):
-            if (self.ports['2001'].buffer==[]): return False
+            if (self.ports[INTIAL_PORT].buffer==[]): return False
             self.interupts.append(
                 {'type':'EST', 'stage':2, 'counter':1, 'args':[tarip]}
             )
             return True
 
         elif (stage==2):
-            _, msg= self.decode_message(self.ports['2001'].pop())
+            _, msg= self.decode_message(self.ports[INTIAL_PORT].pop())
 
-            self.ports['2001'].targetip= tarip
-            self.ports['2001'].targetport= msg[msg.index(':')+1:]
+            self.ports[INTIAL_PORT].targetip= tarip
+            self.ports[INTIAL_PORT].targetport= msg[msg.index(':')+1:]
 
-            self.network.tcp(self.ip, '2001', tarip, '2000', self.encode_message(f'Confirm', 'INT'))
+            self.network.tcp(self.ip, INTIAL_PORT, tarip, LISTEN_PORT, self.encode_message(f'Confirm', 'INT'))
             return True
 
         # Exit program
         elif (stage==-1):
             for portnum, port in self.ports.items():
-                if ( (port.targetip==tarip or port.targetip==None) and portnum!='2000' ):
+                if ( (port.targetip==tarip or port.targetip==None) and portnum!=LISTEN_PORT ):
                     del self.ports[portnum]
                     return True
-                # elif (portnum=='2000'):
-                #     self.ports[portnum].targetip= None
-                #     self.ports[portnum].targetport= None
-                #     self.ports[portnum].buffer= []
             return False
 
 
@@ -138,7 +139,7 @@ class Node:
 
     def step(self):
 
-        if ('2001' not in self.ports):
+        if (INTIAL_PORT not in self.ports):
             tar= f'192.168.1.{random.randint(0, len(self.network.nodes)-1)}'
             if (self.ip!=tar):
                 self.estab_conn(tar)
