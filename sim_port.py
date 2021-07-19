@@ -4,6 +4,16 @@
 
 #~ Port
 class Port:
+    '''
+    Simulates a port which can send a recieve messages via tcp connections
+    - Messages:
+        - Has buffer of equal to constant in cluster node
+        - Type, 3 letter which represent type of packet:
+            - GEN, general message
+            - INT, intialisation messages
+            - NWP, new port and switch (Usually as part of intialisation)
+        - Message body
+    '''
 
     def __init__(self, portnum, network):
         

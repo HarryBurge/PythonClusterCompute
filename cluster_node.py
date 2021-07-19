@@ -17,7 +17,7 @@ class Node:
     Holds a simulation of a node on a network
     - Uses a semi event driven model (May be changed to follow exactly and use closures to activate)
     - Interupts:
-        - Have 3 letter types which indicate which function
+        - Have 3 letter types which indicate which function (Shown by function)
         - Stage of function (-1 to clear action)
         - Timer countdown (-1 called when reaches 0)
         - Args are things to be passed to function
@@ -48,6 +48,12 @@ class Node:
 
     def decode_message(self, msg):
         return msg[:msg.index(';')], msg[msg.index(';')+1:]
+
+
+    def next_new_port(self):
+        for i in range(GEN_PORT_MIN, GEN_PORT_MAX+1):
+            if (str(i) not in self.ports): return str(i)
+        return False
 
 
     def estab_conn(self, tarip, stage= 0): # EST
@@ -183,6 +189,9 @@ class Node:
                         {'type':'REC', 'stage': 0, 'counter':1, 'args':[portnum, msg]}
                     )
                     port.pop()
+
+                elif (type=='NWP'):
+                    pass
 
 
         self.interupts= list(filter(None.__ne__, self.interupts))
