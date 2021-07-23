@@ -22,74 +22,96 @@ class Node:
         - Timer countdown (-1 called when reaches 0)
         - Args are things to be passed to function
     '''
+    ip: str
+    ports: dict
+    network: object
+    interupts: list
 
-    def __init__(self, network, ip):
+    def __init__(self, network: object, ip: str) -> None:
         
         self.ip= ip
-        self.ports= {LISTEN_PORT:Port(LISTEN_PORT, network)}
         self.network= network
 
-        # [{<type>, <stage>, <counter>, <args>}]
+        self.ports= {LISTEN_PORT:Port(LISTEN_PORT, network)}
         self.interupts= []
 
 
-    def __str__(self):
+    def __str__(self) -> str:
         line= f'{self.ip}:['
         for k,d in self.ports.items():
             line+= d.__str__() + ','
         return line+']'
 
 
-    def encode_message(self, msg, type='GEN'):
-        if (type in ['GEN', 'INT']):
+    #~ Func
+    def encode_message(self, msg: str, type: str = 'GEN') -> str:
+        types= ['GEN', 'INT']
+        if (type in types):
             return f'{len(msg)+len(type)+1:{HEADER_LENGTH}}{type};'+msg
-        return False
+
+        raise ValueError(
+            f'type={type} passed, however, only {types} options are supported'
+        )
 
 
-    def decode_message(self, msg):
-        return msg[:msg.index(';')], msg[msg.index(';')+1:]
+    def decode_message(self, msg: str) -> (str, str):
+        if (msg.find(';')!=-1):
+            return msg[:msg.index(';')], msg[msg.index(';')+1:]
+        
+        raise ValueError(
+            f'msg={msg} passed, doesn\'t contain a \';\' which is required'
+        )
 
 
-    def next_new_port(self):
+    def next_new_port(self) -> str:
         for i in range(GEN_PORT_MIN, GEN_PORT_MAX+1):
             if (str(i) not in self.ports): return str(i)
-        return False
+        
+        raise IndexError(
+            f'Port limit exceded, no new ports can be created'
+        )
 
 
-    def estab_conn(self, tarip, stage= 0): # EST
+    def estab_conn( # EST
+        self,
+        tarip: str, 
+        tarport: str, 
+        selport: str, 
+        stage: int = 0
+    ) -> bool:
 
         if (stage==0):
-            self.ports[INTIAL_PORT]= Port(INTIAL_PORT, self.network)
+            self.ports[selport]= Port(selport, self.network)
             self.network.tcp(
-                self.ip, INTIAL_PORT, 
-                tarip, LISTEN_PORT, 
-                self.encode_message(f'{self.ip}:{INTIAL_PORT}', 'INT')
+                self.ip, selport,
+                tarip, tarport, 
+                self.encode_message(f'{self.ip}:{selport}', 'INT')
             )
             self.interupts.append(
-                {'type':'EST', 'stage':1, 'counter':TIMEOUT_TIMER, 'args':[tarip]}
+                {'type':'EST', 'stage':1, 'counter':TIMEOUT_TIMER, 'args':[tarip, tarport, selport]}
             )
             return True
 
         elif (stage==1):
-            if (self.ports[INTIAL_PORT].buffer==[]): return False
+            if (self.ports[selport].buffer==[]): return False
             self.interupts.append(
-                {'type':'EST', 'stage':2, 'counter':1, 'args':[tarip]}
+                {'type':'EST', 'stage':2, 'counter':1, 'args':[tarip, tarport, selport]}
             )
             return True
 
         elif (stage==2):
-            _, msg= self.decode_message(self.ports[INTIAL_PORT].pop())
+            _, msg= self.decode_message(self.ports[selport].pop())
 
-            self.ports[INTIAL_PORT].targetip= tarip
-            self.ports[INTIAL_PORT].targetport= msg[msg.index(':')+1:]
+            self.ports[selport].targetip= tarip
+            self.ports[selport].targetport= msg[msg.index(':')+1:]
 
-            self.network.tcp(self.ip, INTIAL_PORT, tarip, LISTEN_PORT, self.encode_message(f'Confirm', 'INT'))
+            self.network.tcp(self.ip, selport, tarip, tarport, self.encode_message(f'Confirm', 'INT'))
             return True
 
         # Exit program
         elif (stage==-1):
             for portnum, port in self.ports.items():
-                if ( (port.targetip==tarip or port.targetip==None) and portnum!=LISTEN_PORT ):
+                if ( (port.targetip==tarip or port.targetip==None) and portnum!=tarport ):
                     del self.ports[portnum]
                     return True
             return False
@@ -141,16 +163,11 @@ class Node:
             self.ports[selport].targetport= None
             self.ports[selport].buffer= []
             return True
+    #~
 
 
-    def step(self):
-
-        if (INTIAL_PORT not in self.ports):
-            tar= f'192.168.1.{random.randint(0, len(self.network.nodes)-1)}'
-            if (self.ip!=tar):
-                self.estab_conn(tar)
-
-
+    #~ Control
+    def handle_interupts(self):
         for ind, inter in enumerate(self.interupts):
 
             if (inter['type']=='EST'):
@@ -177,7 +194,11 @@ class Node:
                 else: 
                     inter['counter']-= 1
 
+        self.interupts= list(filter(None.__ne__, self.interupts))
+        print(self.interupts)
 
+
+    def handle_incoming_messages(self):
         for portnum, port in self.ports.items():
 
             if (port.buffer!=[]):
@@ -189,13 +210,18 @@ class Node:
                         {'type':'REC', 'stage': 0, 'counter':1, 'args':[portnum, msg]}
                     )
                     port.pop()
+    #~
 
-                elif (type=='NWP'):
-                    pass
+    def step(self):
+
+        if (INTIAL_PORT not in self.ports):
+            tar= f'192.168.1.{random.randint(0, len(self.network.nodes)-1)}'
+            if (self.ip!=tar):
+                self.estab_conn(tar, LISTEN_PORT, INTIAL_PORT)
 
 
-        self.interupts= list(filter(None.__ne__, self.interupts))
-        print(self.interupts)
+        self.handle_interupts()
+        self.handle_incoming_messages()
         
 
 
