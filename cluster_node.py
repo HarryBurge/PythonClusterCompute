@@ -73,80 +73,89 @@ class Node:
 
 
     def estab_conn( # EST
-        self,
-        tarip: str, 
-        tarport: str, 
-        selport: str, 
-        stage: int = 0
+        self, tarip: str, tarport: str, selport: str, stage: int = 0
     ) -> bool:
 
+        # Create port to connect to target ip and port
+        # and send message pointing back to our ip and port
         if (stage==0):
             self.ports[selport]= Port(selport, self.network)
             self.network.tcp(
-                self.ip, selport,
-                tarip, tarport, 
+                self.ip, selport, tarip, tarport, 
                 self.encode_message(f'{self.ip}:{selport}', 'INT')
             )
-            self.interupts.append(
-                {'type':'EST', 'stage':1, 'counter':TIMEOUT_TIMER, 'args':[tarip, tarport, selport]}
-            )
+
+            self.interupts.append({
+                'type':'EST', 'stage':1, 'counter':TIMEOUT_TIMER, 
+                'args':[tarip, tarport, selport]
+            })
+
             return True
 
+        # Wait until target has locked in port
+        # then messaged back its ip and port
         elif (stage==1):
             if (self.ports[selport].buffer==[]): return False
-            self.interupts.append(
-                {'type':'EST', 'stage':2, 'counter':1, 'args':[tarip, tarport, selport]}
-            )
-            return True
 
-        elif (stage==2):
             _, msg= self.decode_message(self.ports[selport].pop())
 
             self.ports[selport].targetip= tarip
             self.ports[selport].targetport= msg[msg.index(':')+1:]
 
-            self.network.tcp(self.ip, selport, tarip, tarport, self.encode_message(f'Confirm', 'INT'))
+            self.network.tcp(
+                self.ip, selport, tarip, tarport, 
+                self.encode_message(f'Confirm', 'INT')
+            )
+
             return True
 
-        # Exit program
+        # Exit stratergy
         elif (stage==-1):
             for portnum, port in self.ports.items():
-                if ( (port.targetip==tarip or port.targetip==None) and portnum!=tarport ):
+                if ( 
+                    (port.targetip==tarip or port.targetip==None) \
+                    and portnum!=tarport
+                ):
                     del self.ports[portnum]
                     return True
+
             return False
 
 
-    def rec_estab_conn(self, selport, msg, stage= 0): # REC
-
-        tarip, tarport= None, None
-
-        try:
-            tarip, tarport= msg.split(':')[0], msg.split(':')[1]
-        except IndexError:
-            pass
+    def rec_estab_conn( # REC
+        self, selport: str, msg: str, stage: int= 0
+    ) -> bool:
 
         if (stage==0):
+            tarip, tarport= None, None
+            if (msg.find(':')!=-1):
+                tarip, tarport= msg.split(':')[0], msg.split(':')[1]
+
             self.ports[selport].targetip= tarip
             self.ports[selport].targetport= tarport
             self.ports[selport].buffer= []
+
             self.network.tcp(
-                self.ip, selport,
-                tarip, tarport,
+                self.ip, selport, tarip, tarport,
                 self.encode_message(f'{self.ip}:{selport}', 'INT')
             )
-            self.interupts.append(
-                {'type':'REC', 'stage':1, 'counter':TIMEOUT_TIMER, 'args':[selport, msg]}
-            )
+
+            self.interupts.append({
+                'type':'REC', 'stage':1, 'counter':TIMEOUT_TIMER, 
+                'args':[selport, msg]
+            })
+
             return True
 
         elif (stage==1):
-            if (self.ports[selport].buffer!=[]):
-                self.interupts.append(
-                    {'type':'REC', 'stage':2, 'counter':TIMEOUT_TIMER, 'args':[selport, msg]}
-                )
-                return True
-            return False
+            if (self.ports[selport].buffer==[]): return False
+
+            self.interupts.append({
+                'type':'REC', 'stage':2, 'counter':TIMEOUT_TIMER, 
+                'args':[selport, msg]
+            })
+
+            return True
 
         elif (stage==2):
             type, tmsg= self.decode_message(self.ports[selport].read())
@@ -155,6 +164,7 @@ class Node:
             if (type=='INT' and tmsg=='Confirm'):
                 self.ports[selport].pop()
                 return True
+
             return False
 
         # Exit program
@@ -162,6 +172,7 @@ class Node:
             self.ports[selport].targetip= None
             self.ports[selport].targetport= None
             self.ports[selport].buffer= []
+            
             return True
     #~
 
