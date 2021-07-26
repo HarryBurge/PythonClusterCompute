@@ -37,10 +37,7 @@ class Node:
 
 
     def __str__(self) -> str:
-        line= f'{self.ip}:['
-        for k,d in self.ports.items():
-            line+= d.__str__() + ','
-        return line+']'
+        return f'{self.ip}:{[d.__str__() for k,d in self.ports.items()]}'
 
 
     #~ Func
@@ -95,7 +92,7 @@ class Node:
         # Wait until target has locked in port
         # then messaged back its ip and port
         elif (stage==1):
-            if (self.ports[selport].buffer==[]): return False
+            if (self.ports[selport].is_empty()): return False
 
             _, msg= self.decode_message(self.ports[selport].pop())
 
@@ -126,6 +123,8 @@ class Node:
         self, selport: str, msg: str, stage: int= 0
     ) -> bool:
 
+        # Reserve port and set its target to the port passed, then
+        # send message back
         if (stage==0):
             tarip, tarport= None, None
             if (msg.find(':')!=-1):
@@ -147,27 +146,19 @@ class Node:
 
             return True
 
+        # Wait for comfimation message
         elif (stage==1):
-            if (self.ports[selport].buffer==[]): return False
+            if (not self.ports[selport].is_empty()):
+                type, tmsg= self.decode_message(self.ports[selport].read())
+                type= type[-3:] # TODO: Delete
 
-            self.interupts.append({
-                'type':'REC', 'stage':2, 'counter':TIMEOUT_TIMER, 
-                'args':[selport, msg]
-            })
-
-            return True
-
-        elif (stage==2):
-            type, tmsg= self.decode_message(self.ports[selport].read())
-            type= type[-3:] # TODO: Delete
-
-            if (type=='INT' and tmsg=='Confirm'):
-                self.ports[selport].pop()
-                return True
+                if (type=='INT' and tmsg=='Confirm'):
+                    self.ports[selport].pop()
+                    return True
 
             return False
 
-        # Exit program
+        # Exit stratergy
         elif (stage==-1):
             self.ports[selport].targetip= None
             self.ports[selport].targetport= None
@@ -178,11 +169,10 @@ class Node:
 
 
     #~ Control
-    def handle_interupts(self):
+    def handle_interupts(self) -> None:
         for ind, inter in enumerate(self.interupts):
 
             if (inter['type']=='EST'):
-
                 result= self.estab_conn(*inter['args'], stage= inter['stage'])
 
                 if (inter['counter']==0): 
@@ -194,8 +184,9 @@ class Node:
                     inter['counter']-= 1
 
             elif (inter['type']=='REC'):
-
-                result= self.rec_estab_conn(*inter['args'], stage= inter['stage'])
+                result= self.rec_estab_conn(
+                    *inter['args'], stage= inter['stage']
+                )
 
                 if (inter['counter']==0): 
                     self.rec_estab_conn(*inter['args'], stage= -1)
@@ -206,13 +197,12 @@ class Node:
                     inter['counter']-= 1
 
         self.interupts= list(filter(None.__ne__, self.interupts))
-        print(self.interupts)
 
 
-    def handle_incoming_messages(self):
+    def handle_incoming_messages(self) -> None:
         for portnum, port in self.ports.items():
 
-            if (port.buffer!=[]):
+            if (not port.is_empty()):
                 type, msg= self.decode_message(port.read())
                 type= type[-3:] # TODO: Delete
 
@@ -223,8 +213,7 @@ class Node:
                     port.pop()
     #~
 
-    def step(self):
-
+    def step(self) -> None:
         if (INTIAL_PORT not in self.ports):
             tar= f'192.168.1.{random.randint(0, len(self.network.nodes)-1)}'
             if (self.ip!=tar):
@@ -232,6 +221,7 @@ class Node:
 
 
         self.handle_interupts()
+        print(self.interupts)
         self.handle_incoming_messages()
         
 

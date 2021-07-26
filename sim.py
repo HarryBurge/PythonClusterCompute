@@ -8,16 +8,21 @@ NUM_NODES= 3
 
 #~ Sim
 class Sim:
+    '''
+    '''
+    nodes: dict
 
-    def __init__(self):
-
+    def __init__(self) -> None:
         self.nodes= {}
 
         for i in range(NUM_NODES):
             self.nodes[f'192.168.1.{i}']= Node(self, f'192.168.1.{i}')
 
 
-    def tcp(self, selip, selport, tarip, tarport, msg):
+    # Funcs
+    def tcp(
+        self, selip: str, selport: str, tarip: str, tarport: str, msg: str
+    ) -> bool:
         
         if (
             tarip != selip and
@@ -27,11 +32,12 @@ class Sim:
             self.nodes[tarip].ports[tarport].targetport in [None, selport]
         ):
             self.nodes[tarip].ports[tarport].receive(msg)
-        else:
-            return False
+            return True
+        
+        return False
+    #~
 
-
-    def visuals(self, screen):
+    def visuals(self, screen: object) -> bool:
 
         for event in pygame.event.get():
             if (event.type == pygame.QUIT):
@@ -82,7 +88,7 @@ class Sim:
         return True
 
 
-    def run(self, screen):
+    def run(self, screen: object) -> None:
         
         while self.visuals(screen):
             for k,d in self.nodes.items():

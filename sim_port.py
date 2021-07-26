@@ -14,9 +14,13 @@ class Port:
             - NWP, new port and switch (Usually as part of intialisation)
         - Message body
     '''
+    portnum: str
+    network: object
+    targetip: str
+    targetport: str
+    buffer: list
 
-    def __init__(self, portnum, network):
-        
+    def __init__(self, portnum: str, network: object) -> None:
         self.portnum= portnum
         self.network= network
 
@@ -25,27 +29,39 @@ class Port:
         self.buffer= []
 
 
-    def __str__(self):
-        return f'{self.portnum}:{self.targetip}-{self.targetport}-->{[x.strip() for x in self.buffer]}'
+    def __str__(self) -> str:
+        return (
+            f'{self.portnum}:{self.targetip}-{self.targetport}-->'
+            f'{[x.strip() for x in self.buffer]}'
+            )
 
     
-    def read(self):
-        if (len(self.buffer) != 0):
+    # Func
+    def is_empty(self) -> bool:
+        if (len(self.buffer) == 0): return True
+        return False
+
+
+    def read(self) -> str:
+        if (not self.is_empty()):
             return self.buffer[0]
-        return False
+        
+        raise IndexError('Nothing to read in buffer')
 
 
-    def pop(self):
-        if (len(self.buffer) != 0):
+    def pop(self) -> str:
+        if (not self.is_empty()):
             return self.buffer.pop(0)
-        return False
+        
+        raise IndexError('Nothing to pop in buffer')
 
 
-    def send(self, msg):
+    def send(self, msg: str) -> bool:
         if (self.network.tcp(self.targetip, self.targetport, msg) != False):
             return True
         return False
 
 
-    def receive(self, msg):
+    def receive(self, msg: str) -> None:
         self.buffer.append(msg)
+    #~
