@@ -61,7 +61,7 @@ class Node:
 
 
     def next_new_port(self) -> str:
-        for i in range(GEN_PORT_MIN, GEN_PORT_MAX+1):
+        for i in range(int(GEN_PORT_MIN), int(GEN_PORT_MAX)+1):
             if (str(i) not in self.ports): return str(i)
         
         raise IndexError(
@@ -165,6 +165,26 @@ class Node:
             self.ports[selport].buffer= []
             
             return True
+    
+    
+    def new_port_switch( # NWP
+        self
+    ):
+        pass
+
+
+    def send_message(self, ip: str, msg: str, type: str) -> bool:
+        for portnum, port in self.ports.items():
+            if (
+                port.targetip==ip and 
+                self.network.tcp(
+                    self.ip, portnum, port.targetport, port.targetport,
+                    self.encode_message(msg, type)
+                )
+            ):
+                return True
+
+        return False
     #~
 
 
@@ -214,12 +234,25 @@ class Node:
     #~
 
     def step(self) -> None:
-        if (INTIAL_PORT not in self.ports):
-            tar= f'192.168.1.{random.randint(0, len(self.network.nodes)-1)}'
-            if (self.ip!=tar):
-                self.estab_conn(tar, LISTEN_PORT, INTIAL_PORT)
+
+        try:
+            newPort= self.next_new_port()
+
+            if (newPort and INTIAL_PORT not in self.ports):
+                tar= f'192.168.1.{random.randint(0, len(self.network.nodes)-1)}'
+                if (self.ip!=tar):
+                    self.estab_conn(tar, LISTEN_PORT, INTIAL_PORT)
+
+            elif (newPort and INTIAL_PORT in self.ports):
+                self.send_message(self.ports[INTIAL_PORT].targetip, f'[{self.ip}]:[{newPort}]', 'NWP')
+                    
+                
 
 
+        except IndexError:
+            # No general ports avaliable
+            pass
+        
         self.handle_interupts()
         print(self.interupts)
         self.handle_incoming_messages()

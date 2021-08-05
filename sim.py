@@ -105,7 +105,6 @@ class Sim:
 if __name__ == '__main__':
     pygame.init()
     screen= pygame.display.set_mode([1000,1000])
-    # screen= 'tom'
 
     sim= Sim()
     sim.run(screen)
