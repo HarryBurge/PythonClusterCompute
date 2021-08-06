@@ -10,8 +10,8 @@ class Port:
         - Has buffer of equal to constant in cluster node
         - Type, 3 letter which represent type of packet:
             - GEN, general message
-            - INT, intialisation messages
-            - NWP, new port and switch (Usually as part of intialisation)
+            - REC, intialisation messages
+            - RWP, new port and switch (Usually as part of intialisation)
         - Message body
     '''
     portnum: str

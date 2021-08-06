@@ -42,7 +42,7 @@ class Node:
 
     #~ Func
     def encode_message(self, msg: str, type: str = 'GEN') -> str:
-        types= ['GEN', 'INT']
+        types= ['GEN', 'REC', 'RWP']
         if (type in types):
             return f'{len(msg)+len(type)+1:{HEADER_LENGTH}}{type};'+msg
 
@@ -79,7 +79,7 @@ class Node:
             self.ports[selport]= Port(selport, self.network)
             self.network.tcp(
                 self.ip, selport, tarip, tarport, 
-                self.encode_message(f'{self.ip}:{selport}', 'INT')
+                self.encode_message(f'{self.ip}:{selport}', 'REC')
             )
 
             self.interupts.append({
@@ -101,7 +101,7 @@ class Node:
 
             self.network.tcp(
                 self.ip, selport, tarip, tarport, 
-                self.encode_message(f'Confirm', 'INT')
+                self.encode_message(f'Confirm', 'REC')
             )
 
             return True
@@ -120,28 +120,24 @@ class Node:
 
 
     def rec_estab_conn( # REC
-        self, selport: str, msg: str, stage: int= 0
+        self, tarip: str, tarport: str, selport: str, stage: int= 0
     ) -> bool:
 
         # Reserve port and set its target to the port passed, then
         # send message back
         if (stage==0):
-            tarip, tarport= None, None
-            if (msg.find(':')!=-1):
-                tarip, tarport= msg.split(':')[0], msg.split(':')[1]
-
             self.ports[selport].targetip= tarip
             self.ports[selport].targetport= tarport
             self.ports[selport].buffer= []
 
             self.network.tcp(
                 self.ip, selport, tarip, tarport,
-                self.encode_message(f'{self.ip}:{selport}', 'INT')
+                self.encode_message(f'{self.ip}:{selport}', 'REC')
             )
 
             self.interupts.append({
                 'type':'REC', 'stage':1, 'counter':TIMEOUT_TIMER, 
-                'args':[selport, msg]
+                'args':[tarip, tarport, selport]
             })
 
             return True
@@ -152,7 +148,7 @@ class Node:
                 type, tmsg= self.decode_message(self.ports[selport].read())
                 type= type[-3:] # TODO: Delete
 
-                if (type=='INT' and tmsg=='Confirm'):
+                if (type=='REC' and tmsg=='Confirm'):
                     self.ports[selport].pop()
                     return True
 
@@ -166,47 +162,6 @@ class Node:
             
             return True
     
-    
-    def new_port_switch( # NWP
-        self, tarip: str= None, selport: str= None, msg: str= None, stage: int= 0 
-    ) -> bool:
-        
-        if (stage==0 and tarip!=None and selport!=None):
-            self.ports[selport]= Port(selport, self.network)
-            self.send_message(tarip, f'[{self.ip}]:[{selport}]', 'NWP')
-
-            self.interupts.append({
-                'type':'NWP', 'stage':1, 'counter':TIMEOUT_TIMER, 
-                'args':[tarip, selport]
-            })
-
-            return True
-
-        elif (stage==100 and msg!=None):
-
-            tarip, _= None, None
-            if (msg.find(':')!=-1):
-                tarip, _= msg.split(':')[0], msg.split(':')[1]
-            else: 
-                return False
-
-            try:
-                selport= self.next_new_port()
-                self.rec_estab_conn(selport, msg)
-
-                self.interupts.append({
-                    'type':'NWP', 'stage':101, 'counter':4*TIMEOUT_TIMER, 
-                    'args':[tarip, selport, msg]
-                })
-
-                self.send_message(tarip, f'[{self.ip}]:[{selport}]', 'NWP') #TODO: this is wrong, need to think about complete refactor
-
-                return True
-
-            except IndexError:
-                # No general ports avaliable
-                return False
-
 
     def send_message(self, tarip: str, msg: str, type: str) -> bool:
         for portnum, port in self.ports.items():
@@ -220,6 +175,49 @@ class Node:
                 return True
 
         return False
+    #~
+
+
+    #~ Routines
+    def new_port_switch( # NWP
+        self, selport: str, tarip: str, tarport: str= None, stage: int= 0 
+    ) -> bool:
+        
+        if (stage==0):
+            if (selport in self.ports): return False
+            self.ports[selport]= Port(selport, self.network)
+
+            self.send_message(tarip, f'[{self.ip}]:[{selport}]', 'RWP')
+
+            self.interupts.append({
+                'type':'NWP', 'stage':1, 'counter':TIMEOUT_TIMER, 
+                'args':[selport, tarip, tarport]
+            })
+
+            return True
+
+
+    def rec_new_port_switch( # RWP
+        self, selport: str, tarip: str, tarport: str, stage: int= 0 
+    ) -> bool:
+        
+        if (stage==0):
+            if (selport in self.ports): return False
+            self.ports[selport]= Port(selport, self.network)
+
+            self.rec_estab_conn(tarip, tarport, selport)
+
+            self.network.tcp(
+                self.ip, selport, tarip, tarport,
+                self.encode_message(f'{self.ip}:{selport}', 'RWP')
+            )
+
+            self.interupts.append({
+                'type':'RWP', 'stage':1, 'counter':TIMEOUT_TIMER, #TODO: Might need to extend timer
+                'args':[selport, tarip, tarport]
+            })
+
+            return True
     #~
 
 
@@ -251,18 +249,18 @@ class Node:
                 else: 
                     inter['counter']-= 1
 
-            elif (inter['type']=='NWP'):
-                result= self.new_port_switch(
-                    *inter['args'], stage= inter['stage']
-                )
+            # elif (inter['type']=='NWP'):
+            #     result= self.new_port_switch(
+            #         *inter['args'], stage= inter['stage']
+            #     )
 
-                if (inter['counter']==0): 
-                    self.new_port_switch(*inter['args'], stage= -1)
-                    self.interupts[ind]= None
-                elif (result):
-                    self.interupts[ind]= None
-                else: 
-                    inter['counter']-= 1
+            #     if (inter['counter']==0): 
+            #         self.new_port_switch(*inter['args'], stage= -1)
+            #         self.interupts[ind]= None
+            #     elif (result):
+            #         self.interupts[ind]= None
+            #     else: 
+            #         inter['counter']-= 1
                 
 
         self.interupts= list(filter(None.__ne__, self.interupts))
@@ -275,20 +273,33 @@ class Node:
                 type, msg= self.decode_message(port.read())
                 type= type[-3:] # TODO: Delete
 
-                if (type=='INT' and msg!='Confirm'):
+                if (type=='REC' and msg!='Confirm'):
+                    tarip, tarport= None, None
+                    if (msg.find(':')!=-1):
+                        tarip, tarport= msg.split(':')[0], msg.split(':')[1]
+
                     self.interupts.append({
                         'type':'REC', 'stage': 0, 'counter':1, 
-                        'args':[portnum, msg]
+                        'args':[tarip, tarport, portnum]
                     })
                     port.pop()
 
-                elif (type=='NWP' and msg!='Confirm'):
-                    self.interupts.append({
-                        'type':'NWP', 'stage': 100, 'counter':1, 
-                        'args':[None, None, msg]
-                    })
-                    port.pop()
-                        
+                elif (type=='RWP' and msg!='Confirm'):
+                    tarip, tarport= None, None
+                    if (msg.find(':')!=-1):
+                        tarip, tarport= msg.split(':')[0], msg.split(':')[1]
+
+                    try:
+                        selport= self.next_new_port()
+
+                        self.interupts.append({
+                            'type':'RWP', 'stage': 0, 'counter':1, 
+                            'args':[selport, tarip, tarport]
+                        })
+                    except IndexError:
+                        pass
+
+                    port.pop()      
     #~
 
     def step(self) -> None:
@@ -302,10 +313,7 @@ class Node:
                     self.estab_conn(tar, LISTEN_PORT, INTIAL_PORT)
 
             elif (newPort and INTIAL_PORT in self.ports):
-                self.new_port_switch(
-                    tarip= self.ports[INTIAL_PORT].targetip, 
-                    selport= newPort
-                )
+                pass
                     
                 
 
