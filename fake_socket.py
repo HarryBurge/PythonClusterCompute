@@ -2,9 +2,7 @@ import socket
 
 class Socket:
 
-    def __init__(self, simulation=None) -> None:
-        self.simulation= simulation
-
+    def __init__(self) -> None:
         # Connection info
         self.selip= None
         self.selport= None
@@ -36,16 +34,16 @@ class Socket:
 
             in_address= self.backlog.pop(0)
 
-            temp= Socket(self.simulation)
+            temp= Socket()
             temp.tarip, temp.tarport= in_address
 
             return (temp, in_address)
 
         return None
 
-    def connect(self, address): # TODO: Make timeout functionality
+    def sim_connect(self, address, nodes): # TODO: Make timeout functionality when connections being made is choosen by the run function in node
         self.tarip, self.tarport= address
-        target= self.simulation.node_with_ip(self.tarip)
+        target= nodes.get(nodes.get_ip_index(self.tarip))
 
         # Target ip doesn't exist
         if (not target):

@@ -16,72 +16,82 @@ class Node:
 
     ip: str
 
-    _simulation: object # Simulation object
-    _push_changes: list # List of simulation commands that need to be execed
-
     network_m: network_manager.NetworkManager
     compute_m: compute_manager.ComputeManager
     reporting_m: reporting_manager.ReportingManager
     interupts: list # 2D List, first axis being priority in desending order
     sockets: dict # {<Port> : Socket object}
 
-    def __init__(self, ip: str, simulation: object=None) -> None:
+    def __init__(self, ip: str) -> None:
         self.ip= ip
-
-        self._simulation= simulation
-        self._push_changes= []
 
         self.network_m= network_manager.NetworkManager()
         self.compute_m= compute_manager.ComputeManager()
         self.reporting_m= reporting_manager.ReportingManager()
         self.interupts= [[]]*5
-        self.sockets= {OP_PORT : fake_socket.Socket(simulation)}
+        self.sockets= {OP_PORT : fake_socket.Socket()}
         self.sockets[OP_PORT].bind((ip, OP_PORT))
         self.sockets[OP_PORT].listen(5)
 
 
-    def connect_to_node(self, target) -> bool:
-        if (target==self.ip): return False
+def connect_to_node(nodes, ind, target) -> bool:
+    self= nodes.get(ind)
 
-        # Only needed in simulation
-        selport= None
-        for port in range(PORT_MIN, PORT_MAX+1):
-            if (port not in self.sockets.keys()):
-                selport= port
-                break
-        else:
-            return False
+    # if (target==self.ip): return False
 
-        s= fake_socket.Socket(self._simulation)
-        s.bind((self.ip, selport))
+    # # Only needed in simulation
+    # selport= None
+    # for port in range(PORT_MIN, PORT_MAX+1):
+    #     if (port not in self.sockets.keys()):
+    #         selport= port
+    #         break
+    # else:
+    #     return False
 
-        try:
-            s.connect((target, 2000))
-            self.sockets[selport]= s
-        except socket.timeout:
-            return False
+    # s= fake_socket.Socket()
+    # s.bind((self.ip, selport))
 
-        return True
+    # try:
+    #     s.connect((target, OP_PORT))
+    #     self.sockets[selport]= s
+    # except socket.timeout:
+    #     return False
+
+    return True
 
 
-    def step(self) -> None:
-        conn, address= self.sockets[2000].accept()
-        
-        # Only needed in simulation
-        selport= None
-        for port in range(PORT_MIN, PORT_MAX+1):
-            if (port not in self.sockets.keys()):
-                selport= port
-                break
-        else:
-            return False
+def step(nodes, ind) -> None:
+    self= nodes.get(ind)
 
-        # Only needed in simulation
-        conn.bind((self.ip, selport))
-        self._push_changes.append(f'self.node_with_ip("{address[0]}").sockets[{address[1]}].tarport= {selport}')
+    # conn,_= self.sockets[2000].accept()
+    
+    # # Only needed in simulation
+    # selport= None
+    # for port in range(PORT_MIN, PORT_MAX+1):
+    #     if (port not in self.sockets.keys()):
+    #         selport= port
+    #         break
+    # else:
+    #     return False
 
-        self.sockets[selport]= conn
+    # # Only needed in simulation
+    # conn.bind((self.ip, selport))
 
-        return self
+    # self.sockets[selport]= conn
+
+    self.ip= "176.112.12.12"
+
+    target= nodes.get(1 if ind==0 else 0)
+    target.ip= '8.8.8.8'
+    nodes.set(1 if ind==0 else 0, target)
+    nodes.set(ind, self)
+
+    # TODO: Think about mutual exclusion jobs
+
+
+def run(nodes, ind) -> None:
+    while True:
+        # nodes.get(ind).step(nodes)
+        step(nodes, ind)
 
         
