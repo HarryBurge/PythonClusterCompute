@@ -3,8 +3,6 @@ import socket
 import multiprocessing
 
 from ComputeNode import compute_manager, network_manager, reporting_manager
-import fake_socket
-import util
 
 #~ Consts
 OP_PORT= 2000
@@ -22,46 +20,50 @@ class Node:
     interupts: list # 2D List, first axis being priority in desending order
     sockets: dict # {<Port> : Socket object}
 
-    def __init__(self, ip: str) -> None:
+    def __init__(self, ip: str, dns: object) -> None:
         self.ip= ip
 
         self.network_m= network_manager.NetworkManager()
         self.compute_m= compute_manager.ComputeManager()
         self.reporting_m= reporting_manager.ReportingManager()
         self.interupts= [[]]*5
-        self.sockets= {OP_PORT : fake_socket.Socket()}
-        self.sockets[OP_PORT].bind((ip, OP_PORT))
-        self.sockets[OP_PORT].listen(5)
+        self.sockets= {OP_PORT : (socket.socket(socket.AF_INET, socket.SOCK_STREAM), (None, None))}
+        act= (socket.gethostbyname(socket.gethostname()), dns.next_actual_port())
+        self.sockets[OP_PORT][0].bind(act)
+        dns.set_actual_address((ip, OP_PORT), act)
+        self.sockets[OP_PORT][0].listen(5)
 
 
-def connect_to_node(nodes, ind, target) -> bool:
-    self= nodes.get(ind)
+    def connect_to_node(self, target, dns) -> bool:
+        if (target==self.ip): return False
 
-    # if (target==self.ip): return False
+        # Only needed in simulation
+        selport= None
+        for port in range(PORT_MIN, PORT_MAX+1):
+            if (port not in self.sockets.keys()):
+                selport= port
+                break
+        else:
+            return False
 
-    # # Only needed in simulation
-    # selport= None
-    # for port in range(PORT_MIN, PORT_MAX+1):
-    #     if (port not in self.sockets.keys()):
-    #         selport= port
-    #         break
-    # else:
-    #     return False
+        s= socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        act= (socket.gethostbyname(socket.gethostname()), dns.next_actual_port())
+        s.bind(act)
+        dns.set_actual_address((self.ip, selport), act)
 
-    # s= fake_socket.Socket()
-    # s.bind((self.ip, selport))
+        try:
+            s.connect(dns.get_actual_address((target, OP_PORT)))
+        except socket.timeout:
+            return False
 
-    # try:
-    #     s.connect((target, OP_PORT))
-    #     self.sockets[selport]= s
-    # except socket.timeout:
-    #     return False
-
-    return True
+        self.sockets[selport]= (s, (target, OP_PORT))
+        return True
 
 
-def step(nodes, ind) -> None:
-    self= nodes.get(ind)
+    def step(self) -> None:
+        pass
+        # print(self.sockets[OP_PORT].getsockname())
+        # print(socket.gethostbyname(socket.gethostname()))
 
     # conn,_= self.sockets[2000].accept()
     
@@ -79,19 +81,19 @@ def step(nodes, ind) -> None:
 
     # self.sockets[selport]= conn
 
-    self.ip= "176.112.12.12"
-
-    target= nodes.get(1 if ind==0 else 0)
-    target.ip= '8.8.8.8'
-    nodes.set(1 if ind==0 else 0, target)
-    nodes.set(ind, self)
-
     # TODO: Think about mutual exclusion jobs
 
 
-def run(nodes, ind) -> None:
+def run(nodes, ind, dns) -> None:
+
+    self= nodes.get(ind)
+    print(self.connect_to_node('192.168.1.1', dns))
+    nodes.set(ind, self)
+
     while True:
-        # nodes.get(ind).step(nodes)
-        step(nodes, ind)
+        self= nodes.get(ind)
+        self.step()
+
+        nodes.set(ind, self)
 
         

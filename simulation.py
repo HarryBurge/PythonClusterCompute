@@ -11,7 +11,29 @@ from ComputeNode import node
 
 #~ Consts
 
-#~ Sharedlistclass
+#~ SimDNS
+class DNS:
+    def __init__(self):
+        self._table= {} # {IP : {Port : actual_port}}
+        self._freeport= 4000
+    def get_actual_address(self, address):
+        try:
+            return self._table[address[0]][address[1]]
+        except KeyError:
+            return None
+    def set_actual_address(self, f_address, a_address):
+        try:
+            self._table[f_address[0]][f_address[1]]= a_address
+        except KeyError:
+            self._table[f_address[0]]= {}
+            self._table[f_address[0]][f_address[1]]= a_address  
+    def next_actual_port(self):
+        self._freeport+=1
+        return self._freeport
+    def print_table(self):
+        print(self._table)
+
+#~ SimNodes
 class Nodes:
     def __init__(self, nodes):
         self._nodes= nodes
@@ -19,11 +41,6 @@ class Nodes:
         return self._nodes[index]
     def get_all(self):
         return self._nodes
-    def get_ip_index(self, ip):
-        for i in range(len(self._nodes)):
-            if self._nodes[i].ip==ip:
-                return i
-        return None
     def set(self, index, item):
         self._nodes[index]= item
 
@@ -48,22 +65,14 @@ def visualize(nodes: Nodes, screen: object) -> bool:
     deg= 2*math.pi/len(nodes.get_all())
 
     for n in nodes.get_all():
-        for port, socket in n.sockets.items():
+        for port, (_, (tarip, _)) in n.sockets.items():
             if (port!=2000):
-                if (socket.tarport!=2000):
-                    pygame.draw.line(screen, 
-                        (255, 0, 0), 
-                        rotate((500, 500), (500, 800), deg*int(socket.selip.split('.')[-1])),
-                        rotate((500, 500), (500, 800), deg*int(socket.tarip.split('.')[-1])),
-                        4
-                    )
-                else:
-                    pygame.draw.line(screen, 
-                        (0, 255, 0), 
-                        rotate((500, 500), (500, 800), deg*int(socket.selip.split('.')[-1])),
-                        rotate((500, 500), (500, 800), deg*int(socket.tarip.split('.')[-1])),
-                        4
-                    )
+                pygame.draw.line(screen, 
+                    (255, 0, 0), 
+                    rotate((500, 500), (500, 800), deg*int(n.ip.split('.')[-1])),
+                    rotate((500, 500), (500, 800), deg*int(tarip.split('.')[-1])),
+                    4
+                )
 
 
     for n in nodes.get_all():
@@ -85,24 +94,29 @@ def main() -> None:
     pygame.init()
     screen = pygame.display.set_mode([1000, 1000])
 
+    BaseManager.register('DNS', DNS)
     BaseManager.register('Nodes', Nodes)
     mn= BaseManager()
     mn.start()
 
+    # Create DNS server
+    dns= mn.DNS()
+
     # Create nodes
-    nodes= mn.Nodes([node.Node('192.168.1.1'), node.Node('192.168.1.2')])
+    nodes= mn.Nodes([node.Node('192.168.1.1', dns), node.Node('192.168.1.2', dns)])
    
     # Start nodes
     processes= []
     for i in range(len(nodes.get_all())):
         processes.append(
-            multiprocessing.Process(target= node.run, args=(nodes,i))
+            multiprocessing.Process(target= node.run, args=(nodes,i,dns))
         )
         processes[-1].start()
 
     # Visualize whats going on
     while visualize(nodes, screen):
-        print([x.ip for x in nodes.get_all()])
+        # print([x.ip for x in nodes.get_all()])
+        print(dns.print_table())
         pass
 
     pygame.quit()
