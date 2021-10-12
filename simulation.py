@@ -5,11 +5,13 @@ import pygame
 import math
 from multiprocessing.managers import BaseManager
 import multiprocessing
+import numpy as np
 
 
 from Node import node
 
 #~ Consts
+NUM_OF_NODES= 25
 
 #~ SimDNS
 class DNS:
@@ -71,35 +73,57 @@ def visualize(nodes: Nodes, screen: object) -> bool:
             return False
 
     screen.fill((255,255,255))
-    
-    def rotate(origin, point, angle):
-        ox, oy = origin
-        px, py = point
 
-        qx = ox + math.cos(angle) * (px - ox) - math.sin(angle) * (py - oy)
-        qy = oy + math.sin(angle) * (px - ox) + math.cos(angle) * (py - oy)
-        return qx, qy
-
-    deg= 2*math.pi/len(nodes.get_all())
+    def ip_to_coords(ip):
+        num= int(ip.split('.')[-1])
+        x= int(num // np.sqrt(NUM_OF_NODES))*(1000/np.sqrt(NUM_OF_NODES))+50
+        y = int(num % np.sqrt(NUM_OF_NODES))*(1000/np.sqrt(NUM_OF_NODES))+50
+        return (x, y)
 
     for n in nodes.get_all():
-        for _,(tarip, _) in n.sockets:
+        for _,(tarip, _) in n.network_m.sockets:
             pygame.draw.line(screen, 
-                (255, 0, 0), 
-                rotate((500, 500), (500, 800), deg*int(n.ip.split('.')[-1])),
-                rotate((500, 500), (500, 800), deg*int(tarip.split('.')[-1])),
+                (255, 0, 0),
+                ip_to_coords(n.network_m.ip),
+                ip_to_coords(tarip),
                 4
             )
-
 
     for n in nodes.get_all():
         pygame.draw.circle(screen, 
             (0, 0, 255), 
-            rotate((500, 500), 
-            (500, 800), 
-            deg*int(n.ip.split('.')[-1])), 
+            ip_to_coords(n.network_m.ip),
             25
         )
+
+
+
+    # def rotate(origin, point, angle):
+    #     ox, oy = origin
+    #     px, py = point
+
+    #     qx = ox + math.cos(angle) * (px - ox) - math.sin(angle) * (py - oy)
+    #     qy = oy + math.sin(angle) * (px - ox) + math.cos(angle) * (py - oy)
+    #     return qx, qy
+
+    # deg= 2*math.pi/len(nodes.get_all())
+
+    # for n in nodes.get_all():
+    #     for _,(tarip, _) in n.network_m.sockets:
+    #         pygame.draw.line(screen, 
+    #             (255, 0, 0), 
+    #             rotate((500, 500), (500, 800), deg*int(n.network_m.ip.split('.')[-1])),
+    #             rotate((500, 500), (500, 800), deg*int(tarip.split('.')[-1])),
+    #             4
+    #         )
+
+
+    # for n in nodes.get_all():
+    #     pygame.draw.circle(screen, 
+    #         (0, 0, 255), 
+    #         rotate((500, 500), (500, 800), deg*int(n.network_m.ip.split('.')[-1])), 
+    #         25
+    #     )
 
     pygame.display.flip()
     return True
@@ -120,7 +144,7 @@ def main() -> None:
     dns= mn.DNS()
 
     # Create nodes
-    nodes= mn.Nodes([node.Node('192.168.1.1', dns), node.Node('192.168.1.2', dns), node.Node('192.168.1.3', dns)])
+    nodes= mn.Nodes([node.Node(f'192.168.1.{x}', dns) for x in range(NUM_OF_NODES)])
    
     # Start nodes
     processes= []
@@ -133,8 +157,6 @@ def main() -> None:
 
     # Visualize whats going on
     while visualize(nodes, screen):
-        # print([x.ip for x in nodes.get_all()])
-        # print(dns.print_table())
         pass
 
     pygame.quit()
