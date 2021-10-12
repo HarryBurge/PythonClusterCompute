@@ -26,6 +26,7 @@ class NetworkManager:
 
         self.sockets= []
 
+
     def connect_to_node(self, target: str, dns: object) -> bool:
         if (target==self.ip): return False
 
@@ -39,12 +40,16 @@ class NetworkManager:
         dns.set_actual_address((self.ip, selport), act)
 
         try:
-            s.connect(dns.get_actual_address((target, OP_PORT)))
+            tar_act_address= dns.get_actual_address((target, OP_PORT))
+            if (tar_act_address==None):
+                return False
+            s.connect(tar_act_address)
             self.sockets.append((s, (target, OP_PORT)))
         except socket.timeout:
             return False
 
         return True
+
 
     def is_connected_to(self, target: str) -> bool:
         for _, (tarip, _) in self.sockets:
@@ -52,10 +57,11 @@ class NetworkManager:
                 return True
         return False
 
+
     def step(self, dns: object) -> None:
 
         socks= [sock for sock,_ in self.sockets]+[self.server_socket]
-        read_sockets, _, exception_sockets= select.select(socks, [], socks)
+        read_sockets, _, exception_sockets= select.select(socks, [], socks, 0.05)
         # act_server_address= dns.get_fake_address((self.ip, OP_PORT))
 
         for n in read_sockets:

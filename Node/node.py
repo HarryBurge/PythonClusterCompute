@@ -38,4 +38,5 @@ def run(nodes, ind, dns) -> None:
     while True:
         self= nodes.get(ind)
         self.network_m.step(dns)
+        print(f'complete {self.network_m.ip}')
         nodes.set(ind, self)
