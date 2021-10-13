@@ -37,6 +37,5 @@ def run(nodes, ind, dns) -> None:
     # Read things
     while True:
         self= nodes.get(ind)
-        self.network_m.step(dns)
-        print(f'complete {self.network_m.ip}')
+        self.network_m.message_handler(dns)
         nodes.set(ind, self)

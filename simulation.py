@@ -81,7 +81,7 @@ def visualize(nodes: Nodes, screen: object) -> bool:
         return (x, y)
 
     for n in nodes.get_all():
-        for _,(tarip, _) in n.network_m.sockets:
+        for _,(tarip, _) in n.network_m._sockets:
             pygame.draw.line(screen, 
                 (255, 0, 0),
                 ip_to_coords(n.network_m.ip),
