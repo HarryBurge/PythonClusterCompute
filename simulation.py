@@ -11,7 +11,7 @@ import numpy as np
 from Node import node
 
 #~ Consts
-NUM_OF_NODES= 25
+NUM_OF_NODES= 36
 
 #~ SimDNS
 class DNS:

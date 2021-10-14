@@ -10,7 +10,21 @@ OP_PORT= 2000
 HEADER_LENGTH= 10
 class MSG_TAG(enum.Enum):
     INFO= 1
-    GEN= 2
+
+def encode_msg(msg_tag: MSG_TAG, msg: str):
+    return f'{msg_tag.name}:{len(msg):<{HEADER_LENGTH-len(msg_tag.name)-1}}{msg}'.encode('utf-8')
+
+def recv_and_decode_msg(sock: socket.socket):
+    message_header= sock.recv(HEADER_LENGTH).decode('utf-8')
+    msg_type, msg_len= message_header.strip().split(':')
+
+    msg_type= MSG_TAG[msg_type]
+    msg_len= int(msg_len)
+
+    msg= sock.recv(msg_len).decode('utf-8')
+
+    return msg_type, msg
+
 
 #~ NetworkManager
 class NetworkManager:
@@ -40,9 +54,6 @@ class NetworkManager:
                 return True
         return False
 
-    def encode_msg(self, msg_tag: MSG_TAG, msg: str):
-        return f'{msg_tag.name}:{len(msg):<{HEADER_LENGTH-len(msg_tag.name)}}{msg}'
-
     #~ Methods
     def connect_to_node(self, target: str, dns: object) -> bool:
         if (target==self.ip): return False
@@ -70,24 +81,35 @@ class NetworkManager:
     def message_handler(self, dns: object) -> None:
         socks= [sock for sock,_ in self._sockets]+[self.server_socket]
         read_sockets, _, exception_sockets= select.select(socks, [], socks, 0.05)
-        # act_server_address= dns.get_fake_address((self.ip, OP_PORT))
 
         for n in read_sockets:
             if (n==self.server_socket):
 
                 cl_socket, cl_address= self.server_socket.accept()
-                self._sockets.append((cl_socket, dns.get_fake_address(cl_address)))
-
-                # cl_socket.sendall(b'HI')
+                self._sockets.append(
+                    (cl_socket, dns.get_fake_address(cl_address))
+                )
 
                 print(f'{(self.ip, OP_PORT)} accepted connection from {dns.get_fake_address(cl_address)}')
 
-            else:
-                # print(f'{self.ip} recived {n.recv(4)}')
-                pass
+                cl_socket.sendall(encode_msg(MSG_TAG.INFO, '10'))
 
-    def _node_info_recv(self, adress: tuple, msg: str) -> None:
-        pass
+            else:
+                msg_type, msg= recv_and_decode_msg(n)
+
+                if (msg_type==MSG_TAG.INFO):
+                    self._info_recv(dns.get_fake_address(n.getpeername()), msg)
+                else:
+                    raise RuntimeError('Unspecifed message was recieved')
+
+    def _info_recv(self, address: tuple, msg: str) -> None:
+        try:
+            self._other_nodes_info[address][0]= float(msg)
+            self._other_nodes_info[address][1]= datetime.datetime.now()
+        except KeyError:
+            self._other_nodes_info[address]= [
+                float(msg), datetime.datetime.now(), datetime.datetime.now()
+                ]
 
 
     #~ Run
