@@ -11,7 +11,7 @@ import numpy as np
 from Node import node
 
 #~ Consts
-NUM_OF_NODES= 36
+NUM_OF_NODES= 5
 
 #~ SimDNS
 class DNS:
@@ -139,7 +139,7 @@ def main() -> None:
     BaseManager.register('Nodes', Nodes)
     mn= BaseManager()
     mn.start()
-
+ 
     # Create DNS server
     dns= mn.DNS()
 

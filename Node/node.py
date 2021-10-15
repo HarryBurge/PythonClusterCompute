@@ -34,8 +34,9 @@ def run(nodes, ind, dns) -> None:
             break
     nodes.set(ind, self)
 
-    # Read things
+    # Control loop
     while True:
         self= nodes.get(ind)
         self.network_m.message_handler(dns)
+        self.network_m.info_to_connected_nodes()
         nodes.set(ind, self)
