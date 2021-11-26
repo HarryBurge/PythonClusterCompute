@@ -2,6 +2,7 @@
 
 
 ## Nodes
+Currently nodes only care about one heuristic, could make them on indurvidual basis
 
 ### Messages
 Messages passed in the form "{Tag}:{len of msg}" with spaces after based off header length. Then "{msg}".
@@ -17,5 +18,9 @@ Each Enum name has to be exactly 4 letters long
 - Since last update <sub>from other node</sub>
 - Since last push or pull <sub>from this node</sub>
 
-Passed in the form "{ONG heuristic 2dp}" with info tag.
+##### Local storage
+Stored in the form {(target ip, target port) : [target heuristic, last update from target, last push or pull to target device], ...}
+
+##### Send to other devices
+Passed in the form "{Offload, Nothing or Gain heuristic 2dp}" with info tag.
 

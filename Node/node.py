@@ -27,9 +27,8 @@ def run(nodes, ind, dns) -> None:
     # Repeat until making valid connection
     self= nodes.get(ind)
     while True:
-        temp= f'192.168.1.{np.random.randint(0,29)}'
+        temp= f'192.168.1.{np.random.randint(0,len(nodes.get_all()))}'
         self.network_m.connect_to_node(temp, dns)
-
         if self.network_m.is_connected_to(temp):
             break
     nodes.set(ind, self)

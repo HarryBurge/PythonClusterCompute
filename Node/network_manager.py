@@ -6,7 +6,7 @@ import datetime
 
 
 #~ Consts
-SEND_INFO_PEROID= 100000
+SEND_INFO_PEROID= 200000
 OP_PORT= 2000
 HEADER_LENGTH= 10
 class MSG_TAG(enum.Enum):
@@ -58,6 +58,12 @@ class NetworkManager:
                 return True
         return False
 
+
+    def ong_heuristic(self) -> str:
+        val= 0.02
+        return str(round(val, 2))
+
+
     #~ Methods
     def connect_to_node(self, target: str, dns: object) -> bool:
         if (target==self.ip): return False
@@ -87,7 +93,7 @@ class NetworkManager:
         if ((datetime.datetime.now()-self._last_info_send).microseconds > SEND_INFO_PEROID):
             self._last_info_send= datetime.datetime.now()
             for sock, _ in self._sockets:
-                sock.sendall(encode_msg(MSG_TAG.INFO, '10'))
+                sock.sendall(encode_msg(MSG_TAG.INFO, self.ong_heuristic()))
 
 
     def message_handler(self, dns: object) -> None:
@@ -102,7 +108,7 @@ class NetworkManager:
                     (cl_socket, dns.get_fake_address(cl_address))
                 )
 
-                print(f'{(self.ip, OP_PORT)} accepted connection from {dns.get_fake_address(cl_address)}')
+                # print(f'{(self.ip, OP_PORT)} accepted connection from {dns.get_fake_address(cl_address)}')
 
             else:
                 msg_type, msg= recv_and_decode_msg(n)
@@ -114,6 +120,7 @@ class NetworkManager:
 
     #~~ Message Handler Sub Functions
     def _info_recv(self, address: tuple, msg: str) -> None:
+        # print(f'{self.ip} from {address} := {msg}')
         try:
             self._other_nodes_info[address][0]= float(msg)
             self._other_nodes_info[address][1]= datetime.datetime.now()
